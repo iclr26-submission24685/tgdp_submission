@@ -1,0 +1,30 @@
+# @package _global_
+
+## Config for the temperature guided model specifically on the MuJoCo environment
+
+dataset:
+  normalizers:
+    mc_returns:
+      value: 4.0
+  max_episode_length: 280
+  terminal_penalty: 0
+  discount: 0.997
+  padding_terminations: zero 
+  padding_truncations: 
+
+renderer:
+  _target_: tgdp.rendering.MuJoCoKitchenRenderer
+  env_name: ${env}
+  # Render Kwargs
+  trackbodyid: 2
+  distance: 10
+  lookat: [5, 2, 0.5]
+  elevation: 0
+
+guides:
+  trajectory_return:
+    cfg_target_value: 1.0
+
+diffusion_model:
+  guide_scale: 1.0
+

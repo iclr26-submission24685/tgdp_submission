@@ -1,0 +1,16 @@
+# @package _global_
+
+# diffusion
+diffusion_model:
+  guide_scale: 2.5 # Hyperopt: 2.5, Cleandiffuser: 6.0
+
+# dataset
+# dataset:
+#   normalizers:
+#     mc_returns:
+#       value: 1000.
+
+# guides
+guides:
+  trajectory_return:
+    cfg_target_value: 0.8 # Hyperopt: 0.8, Cleandiffuser: 0.6

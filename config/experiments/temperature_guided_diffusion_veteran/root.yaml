@@ -1,0 +1,14 @@
+## global parameters/placeholders
+env: ???
+experiment_name: tgdpv_${env}
+results_dir: results
+seed: 
+observation_dim: ???
+action_dim: ???
+
+## config
+defaults:
+  - ../../log_paths.yaml # formats paths for all logging and checkpointing
+  - defaults.yaml
+  - _self_
+

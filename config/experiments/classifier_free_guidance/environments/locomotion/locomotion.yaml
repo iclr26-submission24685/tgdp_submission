@@ -1,0 +1,19 @@
+# @package _global_
+
+## Config for the CG specifically on the MuJoCo environment
+
+dataset:
+  max_episode_length: 1000
+  terminal_penalty: -100
+  discount: 0.997 
+  padding_terminations: zero 
+  padding_truncations: 
+
+renderer:
+  _target_: tgdp.rendering.MuJoCoLocomotionRenderer
+  env_name: ${env}
+  # Render Kwargs
+  trackbodyid: 2
+  distance: 10
+  lookat: [5, 2, 0.5]
+  elevation: 0

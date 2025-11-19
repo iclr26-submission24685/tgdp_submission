@@ -1,0 +1,11 @@
+name: tgdp
+channels:
+   - conda-forge
+   - menpo
+   - defaults
+dependencies:
+   - python=3.12
+   - mesalib
+   - opencv
+   - glew
+   - osmesa

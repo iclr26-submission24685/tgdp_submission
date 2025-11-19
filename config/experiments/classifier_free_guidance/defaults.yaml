@@ -1,0 +1,171 @@
+# @package _global_
+
+## Default config for Classifier Free Guidance
+
+horizon: 32
+
+dataset:
+  _target_: tgdp.datasets.D4RLDataset
+  env_name: ${env}
+  normalizers:
+    observations: 
+      _target_: tgdp.datasets.normalizers.GaussianNormalizer
+    mc_returns: 
+      _target_: tgdp.datasets.normalizers.LimitsNormalizer
+      min_value: 0.0
+      max_value: 1.0
+  datastore:
+    _target_: tgdp.datasets.datastore.NumpyDatastore
+    _partial_: True
+  max_n_episodes: 100000
+  max_episode_length: ???
+  terminal_penalty: ???
+  compute_mc_return: True
+  discount: ??? 
+  horizon: ${horizon}
+  padding_terminations: ??? 
+  padding_truncations: ???
+
+renderer: ???
+
+guides:
+  trajectory_return:
+    _target_: tgdp.models.guidance.MonteCarloReturnGuide
+    train_noise_conditional_network: False
+    network: 
+    loss_fn:
+
+diffusion_model:
+    _target_: tgdp.models.diffusion.ClassifierFreeDiffusion
+    network: 
+      _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+      wrapped_network:
+        _target_: tgdp.networks.diffusion.DiT
+        input_size: ${observation_dim} 
+        sigma_embedding:
+            _target_: tgdp.networks.embeddings.SinusoidalEmbedding
+            embedding_size: 128
+            hidden_size_factor: 2
+        global_condition_embedding:
+          _target_: tgdp.networks.embeddings.MLPEmbedding
+          embedding_size: 128
+          hidden_layers: 1
+          hidden_size_factor: 2
+          activation_fn:
+            _target_: torch.nn.Mish
+        hidden_size: 320
+        n_heads: 10
+        depth: 2
+        dropout: 0.1
+    guides: ${guides}
+    guide_scale: ???
+    dropout_probability: 0.25
+    empty_set_value: 0.0
+    scaling:
+      _target_: tgdp.models.scaling.KarrasScaling
+    loss_fn: 
+      _target_: tgdp.models.losses.WeightedDiffusionL2
+      action_dim: 0
+      observation_dim: ${observation_dim}
+      horizon: ${horizon}
+      weight_config:
+        next_observation_weight: 10.
+        weight_discount: 1.
+    conditioned_loss: True
+    mask_conditioned_loss: False
+
+policy:
+  _target_: tgdp.models.policy.InverseDynamicsPolicy
+  network:
+    _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+    wrapped_network:
+      _target_: tgdp.networks.mlp.FeedForwardNet
+      input_size: ${add:${observation_dim},${observation_dim}}
+      output_size: ${action_dim}
+      fully_connected_sizes: [512,512]
+      activation:
+        _target_: torch.nn.ReLU
+      norm: 
+      use_dropout: False
+      use_residual_connection: False
+      out_activation:
+        _target_: torch.nn.Tanh
+  action_dim: ${action_dim}
+  observation_dim: ${observation_dim}
+  open_loop: False
+  loss_fn:
+    _target_: tgdp.models.losses.PolicyL2
+
+sampler:
+  _target_: tgdp.sampling.EulerSampler
+  s_churn: 80
+  s_noise: 0.5
+  
+noise_scheduler:
+  _target_: tgdp.sampling.noise_schedulers.KarrasNoiseScheduler
+  sigma_min: 0.002 
+  sigma_max: 80
+  rho: 7.
+
+sigma_distribution:
+  _target_: tgdp.sigma_distributions.RandLogLogistic
+  loc: 0.5
+  scale: 0.5
+  min_value: 0.002
+  max_value: 80
+
+planner:
+  _target_: tgdp.models.planning.DiffusionPlanner
+  diffusion_model: ${diffusion_model}
+  sampler: ${sampler}
+  noise_scheduler: ${noise_scheduler}
+  sigma_distribution: ${sigma_distribution}
+  horizon: ${horizon}
+  diffusion_steps: 20 
+  action_dim: ${action_dim}
+  observation_dim: ${observation_dim}
+  plan_actions: False
+  plan_observations: True
+  observation_conditioning: True
+  ensemble_num_samples: 1
+  ensemble_reduction: 
+  ensemble_value_key: 
+
+agent:
+  _target_: tgdp.agent.FlatAgent
+  planner: ${planner}
+  policy: ${policy}
+  action_dim: ${action_dim}
+  observation_dim: ${observation_dim}
+  replan_frequency: 1
+  optimizer:
+    _target_: torch.optim.AdamW
+    _partial_: True
+    weight_decay: 1.0e-4
+    lr: 2.0e-4
+  lr_scheduler:
+    _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+    _partial_: True
+    T_max: 100
+    eta_min: 1e-5
+
+trainer:
+  _target_: tgdp.training.Trainer
+  train_batch_size: 256
+  n_train_epochs: 100 
+  accumulate_grad_batches: 1
+  n_train_steps_per_epoch: 10000
+  ema_decay: 0.9999
+  step_start_ema: 1000
+  update_ema_every: 1
+  n_test_episodes: 64
+  test_every_n_epochs: 10 
+  start_test_step: 100000
+  load_ckpt: False
+  resume_training: False
+  load_ckpt_folder: 
+  load_ckpt_step:
+  save_freq: 10000
+  label_freq: 
+  lightning_logger:
+    _target_: lightning.pytorch.loggers.TensorBoardLogger

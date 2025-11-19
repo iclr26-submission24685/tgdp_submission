@@ -1,0 +1,19 @@
+# @package _global_
+
+## Config for the Ajay DD model specifically on the MuJoCo locomotion environment
+
+dataset:
+  max_episode_length: 1000
+  terminal_penalty: -100
+  discount: 0.997 # Repo uses 0.99, clean diffuser uses 0.997
+
+renderer:
+  _target_: tgdp.rendering.MuJoCoLocomotionRenderer
+  env_name: ${env}
+  # Render Kwargs
+  trackbodyid: 2
+  distance: 10
+  lookat: [5, 2, 0.5]
+  elevation: 0
+
+

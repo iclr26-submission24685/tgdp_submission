@@ -1,0 +1,22 @@
+# @package _global_
+
+## This file defines the paths for logging and results storage for all experiments.
+
+run_dir: ${results_dir}/${experiment_name}
+
+## logging and checkpointing
+trainer:
+  results_dir: ${results_dir}
+  experiment_name: ${experiment_name}
+  lightning_logger:
+    save_dir: ${results_dir}
+    name: ${experiment_name}
+    version: logs
+
+renderer:
+  run_dir: ${run_dir}
+
+## hydra
+hydra:
+  run:
+    dir: ${run_dir}

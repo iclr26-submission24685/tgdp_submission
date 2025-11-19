@@ -1,0 +1,35 @@
+[project]
+name = "tgdp"
+version = "0.1.0"
+description = "Implementation of Temperature Guided Diffusion Planner."
+authors = [
+    { name="Anonymous", email="anon@ymous.com" }
+]
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = [
+    # See requirements.txt for dependencies
+]
+
+[project.urls]
+Homepage = "https://github.com/iclr26-submission24685/tgdp_submission"
+Repository = "https://github.com/iclr26-submission24685/tgdp_submission"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+select = ["E", "F", "W", "I","D"]
+
+[tool.ruff.lint]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["D"]
+
+[tool.ruff.format]
+quote-style = "double"

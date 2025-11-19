@@ -1,0 +1,5 @@
+# @package _global_
+
+# dataset
+dataset:
+  max_episode_length: 300

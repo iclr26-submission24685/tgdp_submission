@@ -1,0 +1,25 @@
+# @package _global_
+
+## Config for the temperature guided model specifically on the Kitchen environment
+dataset:
+  max_episode_length: 280
+  terminal_penalty: 0
+  discount: 0.997 
+  jump_step_stride: 4
+  padding_terminations: last
+  padding_truncations:
+  repeat_rewards_at_terminations: True
+
+diffusion_model: 
+  scaling: 
+    _target_: tgdp.models.scaling.TrajectoryKarrasScalingEpsilon
+
+renderer:
+  _target_: tgdp.rendering.MuJoCoKitchenRenderer
+  env_name: ${env}
+  # Render Kwargs
+  trackbodyid: 2
+  distance: 10
+  lookat: [5, 2, 0.5]
+  elevation: 0
+

@@ -1,0 +1,51 @@
+# @package _global_
+
+horizon: 32
+
+## Config for the temperature guided model specifically on the maze2d environment
+dataset:
+  _target_: tgdp.datasets.D4RLMazeDataset
+  max_episode_length: ???
+  dv_data_augmentation: True
+  iql: True
+  non_finishing_penalty: -100
+  discount: 1.0
+  jump_step_stride: 15
+  padding_terminations: last
+  padding_truncations: 
+  repeat_rewards_at_terminations: True
+
+renderer:
+  _target_: tgdp.rendering.Maze2DRenderer
+  env_name: ${env}
+
+diffusion_model:
+  network:
+  reweight_samples: False
+  reweight_factor: 
+  reweight_bias: 
+  reweight_key: 
+
+guides:
+  mc_return:
+    _target_: tgdp.models.guidance.MonteCarloReturnGuide
+    network:
+      _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+      wrapped_network:
+        _target_: tgdp.networks.guides.HalfDiT
+        input_size: ${observation_dim}
+        out_size: 1
+        sigma_embedding:
+        global_condition_embedding:
+        hidden_size: 256
+        n_heads: 4
+        depth: 2
+        dropout: 0.0
+        project_output_from_dit: False
+    train_noise_conditional_network: False
+    loss_fn:
+      _target_: tgdp.models.losses.ValueL2
+
+planner:
+  ensemble_num_samples: 50
+  ensemble_value_key: mc_return

@@ -1,0 +1,12 @@
+# @package _global_
+
+# diffusion
+diffusion_model:
+  guide_scale: 1.0
+
+# guides
+guides:
+  trajectory_return:
+    cfg_target_value: 0.85
+  
+

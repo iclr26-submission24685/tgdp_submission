@@ -1,0 +1,22 @@
+# @package _global_
+
+# global
+horizon: 4
+
+# diffusion model
+diffusion_model:
+  guide_scales:
+    trajectory_return: 0.001 # Paper: 0.001, Cleandiffuser: 0.0001
+  sigma_stop_grad: 0.4 # Corresponds to t_stopgrad = 4, Paper: 0.4, Cleandiffuser: 0.2
+  network: 
+    wrapped_network:
+      down_sizes: [32, 128, 256]
+      # depth: 1
+
+# guides
+guides:
+  trajectory_return:
+    network: 
+      wrapped_network:
+        down_sizes: [32, 128, 256]
+        # depth: 1

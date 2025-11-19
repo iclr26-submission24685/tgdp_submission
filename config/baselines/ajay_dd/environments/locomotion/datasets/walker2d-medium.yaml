@@ -1,0 +1,16 @@
+# @package _global_
+
+# diffusion
+diffusion_model:
+  guide_scale: 6.0
+
+# dataset
+dataset:
+  normalizers:
+    mc_returns:
+      value: 1300.
+
+# guides
+guides:
+  trajectory_return:
+    cfg_target_value: 0.75

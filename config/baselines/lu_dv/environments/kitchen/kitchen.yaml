@@ -1,0 +1,52 @@
+# @package _global_
+
+horizon: 32
+
+## Config for the temperature guided model specifically on the Kitchen environment
+dataset:
+  max_episode_length: 280
+  terminal_penalty: 0
+  discount: 0.997 
+  jump_step_stride: 4
+  padding_terminations: last 
+  padding_truncations: last
+
+renderer:
+  _target_: tgdp.rendering.MuJoCoKitchenRenderer
+  env_name: ${env}
+  # Render Kwargs
+  trackbodyid: 2
+  distance: 10
+  lookat: [5, 2, 0.5]
+  elevation: 0
+
+diffusion_model:
+  network:
+  reweight_samples: False
+  reweight_factor: 
+  reweight_bias: 
+  reweight_key: 
+
+guides:
+  mc_return:
+    _target_: tgdp.models.guidance.MonteCarloReturnGuide
+    network:
+      _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+      wrapped_network:
+        _target_: tgdp.networks.guides.HalfDiT
+        input_size: ${observation_dim}
+        out_size: 1
+        sigma_embedding:
+        global_condition_embedding:
+        hidden_size: 256
+        n_heads: 4
+        depth: 2
+        dropout: 0.0
+        project_output_from_dit: False
+    train_noise_conditional_network: False
+    loss_fn:
+      _target_: tgdp.models.losses.ValueL2
+
+planner:
+  ensemble_num_samples: 150
+  ensemble_value_key: mc_return

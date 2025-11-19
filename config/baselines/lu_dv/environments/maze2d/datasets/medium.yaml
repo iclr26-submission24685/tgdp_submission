@@ -1,0 +1,5 @@
+# @package _global_
+
+# dataset
+dataset:
+  max_episode_length: 600 # In the config its set to 600 but not passed to the dataset

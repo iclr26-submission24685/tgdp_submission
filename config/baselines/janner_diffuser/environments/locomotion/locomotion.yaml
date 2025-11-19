@@ -1,0 +1,10 @@
+# @package _global_
+
+## Config for the Janner Diffuser model specifically on the MuJoCo environment
+
+
+# diffusion model
+diffusion_model:
+  guide_scales:
+    trajectory_return: 0.1
+  sigma_stop_grad: 0.2 # Corresponds to t_stopgrad = 2

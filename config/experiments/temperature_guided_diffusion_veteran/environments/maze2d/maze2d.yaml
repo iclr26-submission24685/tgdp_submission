@@ -1,0 +1,28 @@
+# @package _global_
+
+## Config for the temperature guided model specifically on the maze2d environment
+
+dataset:
+  _target_: tgdp.datasets.D4RLMazeDataset
+  max_episode_length: ???
+  dv_data_augmentation: True
+  jump_step_stride: 15
+  discount: 0.997
+  padding_terminations: last
+  padding_truncations: # In maze2d, we do not pad truncations
+  repeat_rewards_at_terminations: True
+
+diffusion_model: 
+  scaling: 
+    _target_: tgdp.models.scaling.KarrasScaling
+
+renderer:
+  _target_: tgdp.rendering.Maze2DRenderer
+  # _target_: tgdp.rendering.MuJoCoMaze2DRenderer
+  # Render Kwargs
+  # trackbodyid: 1
+  # distance: 5
+  # lookat: [0, 0, 0.5]
+  # elevation: -90
+  # azimuth: 0
+  env_name: ${env}

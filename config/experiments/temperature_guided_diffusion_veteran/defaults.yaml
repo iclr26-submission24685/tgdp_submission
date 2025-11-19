@@ -1,0 +1,206 @@
+# @package _global_
+
+## Default config for Temperature Guided Diffusion Veteran
+
+horizon: 32
+
+dataset:
+  _target_: tgdp.datasets.D4RLDataset
+  env_name: ${env}
+  normalizers:
+    observations: 
+      _target_: tgdp.datasets.normalizers.GaussianNormalizer
+    mc_returns:
+      _target_: tgdp.datasets.normalizers.GaussianNormalizer
+  datastore:
+    _target_: tgdp.datasets.datastore.NumpyDatastore
+    _partial_: True
+  max_n_episodes: 100000
+  max_episode_length: ???
+  compute_mc_return: True
+  discount: ??? 
+  horizon: ${horizon}
+  jump_step_stride: ???
+  padding_terminations: ??? 
+  padding_truncations: ???
+  repeat_rewards_at_terminations: ???
+
+renderer: ???
+
+diffusion_model:
+  _target_: tgdp.models.diffusion.TemperatureGuidedDiffusion
+  network: 
+    _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+    wrapped_network:
+      _target_: tgdp.networks.diffusion.DiT
+      input_size: ${observation_dim} 
+      sigma_embedding:
+          _target_: tgdp.networks.embeddings.SinusoidalEmbedding
+          embedding_size: 128
+          hidden_size_factor: 2
+      global_condition_embedding:
+        _target_: tgdp.networks.embeddings.MLPEmbedding
+        embedding_size: 128
+        hidden_layers: 1
+        hidden_size_factor: 2
+        activation_fn:
+          _target_: torch.nn.Mish
+      hidden_size: 256
+      n_heads: 8
+      depth: 2
+      dropout: 0.1
+  guides: ${guides}
+  guide_scale: 20.
+  max_temperature: 3.0
+  target_temperature: 3.0
+  temperature_base: 0.0
+  guide_scale_alpha: 4.0
+  discrete_temperature_distribution: False
+  unbiased_loss_probability: 0.25
+  batch_normalize_weights: True
+  scaling: ???
+  loss_fn:
+    _target_: tgdp.models.losses.WeightedDiffusionL2
+    action_dim: 0 
+    observation_dim: ${observation_dim}
+    horizon: ${horizon}
+    weight_config:
+      next_observation_weight: 10.
+      weight_discount: 1.
+  conditioned_loss: True 
+  mask_conditioned_loss: False
+  
+guides:
+  trajectory_return:
+    _target_: tgdp.models.guidance.MonteCarloReturnGuide
+    network:
+    train_noise_conditional_network: False
+    loss_fn:
+  # trajectory_return:
+  #   _target_: tgdp.models.guidance.MonteCarloReturnGuide
+  #   network:
+  #     _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+  #     wrapped_network:
+  #       _target_: tgdp.networks.guides.HalfDiT
+  #       input_size: ${observation_dim}
+  #       out_size: 1
+  #       sigma_embedding:
+  #       global_condition_embedding:
+  #       hidden_size: 256
+  #       n_heads: 8
+  #       depth: 2
+  #       dropout: 0.0
+  #       project_output_from_dit: False
+  #   train_noise_conditional_network: False
+  #   loss_fn:
+  #     _target_: tgdp.models.losses.ValueL2
+
+policy:
+  _target_: tgdp.models.policy.DiffusionInverseDynamicsPolicy
+  diffusion_model: 
+    _target_: tgdp.models.diffusion.UnguidedDiffusion
+    network:
+      _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+      wrapped_network:
+        _target_: tgdp.networks.diffusion.DiffusionMLPNet
+        input_size: ${action_dim}
+        sigma_embedding:
+          _target_: tgdp.networks.embeddings.PositionalEmbedding
+          embedding_size: 64
+          hidden_size_factor: 2
+        condition_embedding:
+          _target_: tgdp.networks.embeddings.PassThroughEmbedding
+          embedding_size: ${add:${observation_dim},${observation_dim}}
+        input_embedding:
+        fully_connected_sizes: [256,256,256]
+        norm: 
+        dropout: 0.0
+    guides: 
+    scaling:
+      _target_: tgdp.models.scaling.KarrasScaling
+    loss_fn:
+      _target_: tgdp.models.losses.DiffusionL2
+  sampler:
+    _target_: tgdp.sampling.DDPMSampler
+    temperature: 0.5
+  noise_scheduler: ${noise_scheduler}
+  sigma_distribution: ${sigma_distribution}
+  diffusion_steps: 10
+  observation_dim: ${observation_dim}
+  action_dim: ${action_dim}
+  open_loop: False
+
+sampler:
+  _target_: tgdp.sampling.EulerSampler
+  s_churn: 80
+  s_noise: 0.5
+  
+noise_scheduler:
+  _target_: tgdp.sampling.noise_schedulers.KarrasNoiseScheduler
+  sigma_min: 0.002
+  sigma_max: 80
+  rho: 7.
+
+sigma_distribution:
+  _target_: tgdp.sigma_distributions.RandLogLogistic
+  loc: 0.5
+  scale: 0.5
+  min_value: 0.002
+  max_value: 80
+
+planner:
+  _target_: tgdp.models.planning.DiffusionPlanner
+  diffusion_model: ${diffusion_model}
+  sampler: ${sampler}
+  noise_scheduler: ${noise_scheduler}
+  sigma_distribution: ${sigma_distribution}
+  horizon: ${horizon}
+  diffusion_steps: 20 
+  action_dim: ${action_dim}
+  observation_dim: ${observation_dim}
+  plan_actions: False
+  plan_observations: True
+  observation_conditioning: True
+  ensemble_num_samples: 1
+  ensemble_reduction: 
+  ensemble_value_key: 
+
+agent:
+  _target_: tgdp.agent.FlatAgent
+  planner: ${planner}
+  policy: ${policy}
+  action_dim: ${action_dim}
+  observation_dim: ${observation_dim}
+  replan_frequency: 1
+  optimizer:
+    _target_: torch.optim.AdamW
+    _partial_: True
+    lr: 2.0e-4
+    weight_decay: 1.0e-4
+  lr_scheduler:
+    _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+    _partial_: True
+    T_max: 100
+    eta_min: 1.0e-5
+
+trainer:
+  _target_: tgdp.training.Trainer
+  train_batch_size: 256
+  n_train_epochs: 100 
+  accumulate_grad_batches: 1
+  n_train_steps_per_epoch: 10000
+  ema_decay: 0.9999
+  step_start_ema: 1000
+  update_ema_every: 1
+  n_test_episodes: 100
+  test_every_n_epochs: 20 
+  start_test_step: 200000
+  load_ckpt: False
+  resume_training: False
+  load_ckpt_folder: 
+  load_ckpt_step:
+  save_freq: 10000
+  label_freq: 
+  log_learning_rate: True
+  lightning_logger:
+    _target_: lightning.pytorch.loggers.TensorBoardLogger

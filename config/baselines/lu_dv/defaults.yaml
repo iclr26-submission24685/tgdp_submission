@@ -1,0 +1,159 @@
+# @package _global_
+
+## Default config for Diffusion Veteran
+
+horizon: ???
+
+dataset:
+  _target_: tgdp.datasets.D4RLDataset
+  env_name: ${env}
+  normalizers:
+    observations: 
+      _target_: tgdp.datasets.normalizers.GaussianNormalizer
+    actions:
+      _target_: tgdp.datasets.normalizers.GaussianNormalizer
+    mc_returns:
+      _target_: tgdp.datasets.normalizers.LimitsNormalizer
+      min_value: -1.0
+      max_value: 1.0
+  datastore:
+    _target_: tgdp.datasets.datastore.NumpyDatastore
+    _partial_: True
+  max_n_episodes: 100000
+  max_episode_length: ???
+  compute_mc_return: True
+  discount: ??? 
+  horizon: ${horizon}
+  jump_step_stride: 1
+  padding_terminations: ??? 
+  padding_truncations: ???
+
+renderer: ???
+
+guides: ???
+
+diffusion_model:
+  _target_: tgdp.models.diffusion.UnguidedDiffusion
+  network: 
+    _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+    wrapped_network:
+      _target_: tgdp.networks.diffusion.DiT
+      input_size: ${observation_dim} 
+      sigma_embedding:
+          _target_: tgdp.networks.embeddings.FourierFeaturesEmbedding
+          embedding_size: 128
+      global_condition_embedding:
+      hidden_size: 256
+      n_heads: 4
+      depth: ???
+      dropout: 0.0
+  guides: ${guides}
+  scaling:
+    _target_: tgdp.models.scaling.TrajectoryKarrasScalingEpsilon
+  loss_fn:
+    _target_: tgdp.models.losses.DiffusionL2
+  reweight_samples: ???
+  conditioned_loss: True 
+  mask_conditioned_loss: True
+
+planner:
+  _target_: tgdp.models.planning.DiffusionPlanner
+  diffusion_model: ${diffusion_model}
+  sampler: 
+    _target_: tgdp.sampling.DDIMSampler
+    temperature: 1.0
+  noise_scheduler: 
+    _target_: tgdp.sampling.noise_schedulers.DVLinearScheduler
+  sigma_distribution:
+    _target_: tgdp.sigma_distributions.DVLinearDistribution
+  horizon: ${horizon}
+  diffusion_steps: 20
+  action_dim: ${action_dim}
+  observation_dim: ${observation_dim}
+  plan_actions: False
+  plan_observations: True
+  observation_conditioning: True
+  ensemble_num_samples: ???
+  ensemble_reduction: max
+  ensemble_value_key: ??? 
+
+policy:
+  _target_: tgdp.models.policy.DiffusionInverseDynamicsPolicy
+  diffusion_model: 
+    _target_: tgdp.models.diffusion.UnguidedDiffusion
+    network:
+      _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
+      ema_decay: 0.995 # DV uses a different EMA decay for the policy
+      wrapped_network:
+        _target_: tgdp.networks.diffusion.DiffusionMLPNet
+        input_size: ${action_dim}
+        sigma_embedding:
+          _target_: tgdp.networks.embeddings.PositionalEmbedding
+          embedding_size: 64
+          hidden_size_factor: 2
+        condition_embedding:
+          _target_: tgdp.networks.embeddings.PassThroughEmbedding
+          embedding_size: ${add:${observation_dim},${observation_dim}}
+        input_embedding:
+        fully_connected_sizes: [256,256,256]
+        norm: 
+        dropout: 0.0
+    guides:
+    scaling:
+      _target_: tgdp.models.scaling.DDPMEpsilonScaling
+      M: 10
+    loss_fn:
+      _target_: tgdp.models.losses.DiffusionL2
+  sampler:
+    _target_: tgdp.sampling.DDPMSampler
+    temperature: 0.5
+  noise_scheduler:
+    _target_: tgdp.sampling.noise_schedulers.LinearBetaNoiseScheduler
+    M: 10
+  sigma_distribution:
+    _target_: tgdp.sigma_distributions.RandDiscreteCosineBeta
+    M: 10
+  diffusion_steps: 10
+  observation_dim: ${observation_dim}
+  action_dim: ${action_dim}
+  open_loop: False
+
+agent:
+  _target_: tgdp.agent.FlatAgent
+  planner: ${planner}
+  policy: ${policy}
+  action_dim: ${action_dim}
+  observation_dim: ${observation_dim}
+  replan_frequency: 1
+  optimizer:
+    _target_: torch.optim.AdamW
+    _partial_: True
+    lr: 3e-4
+  lr_scheduler: # DV does not use an lr schedule for the bellman value in locomotion. We skip this.
+    _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+    _partial_: True
+    T_max: 100
+    eta_min: 0.0
+
+trainer:
+  _target_: tgdp.training.Trainer
+  train_batch_size: 128
+  n_train_epochs: 100 
+  accumulate_grad_batches: 1
+  n_train_steps_per_epoch: 10000
+  ema_decay: 0.9999
+  step_start_ema: 1000
+  update_ema_every: 1
+  n_test_episodes: 64
+  test_every_n_epochs: 20
+  start_test_step: 100000
+  load_ckpt: False
+  resume_training: False
+  load_ckpt_folder: 
+  load_ckpt_step: 
+    planner.diffusion.guides: 200000
+  save_freq: 10000
+  label_freq: 200000
+  log_learning_rate: True
+  lightning_logger:
+    _target_: lightning.pytorch.loggers.TensorBoardLogger
