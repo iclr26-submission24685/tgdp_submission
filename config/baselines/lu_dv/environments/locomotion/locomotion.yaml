@@ -21,7 +21,6 @@ renderer:
   elevation: 0
 
 diffusion_model:
-  network:
   reweight_samples: True # DV in fact does some reweighting of the samples in a batch
   reweight_factor: 2
   reweight_bias: 1

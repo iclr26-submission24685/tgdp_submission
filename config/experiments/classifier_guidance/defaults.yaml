@@ -62,7 +62,7 @@ diffusion_model:
       hidden_size: 320
       n_heads: 10
       depth: 2
-      dropout: 0.1
+      dropout: 0.0
   guides: ${guides}
   guide_scales:
     trajectory_return: 0.1
@@ -152,13 +152,12 @@ agent:
   optimizer:
     _target_: torch.optim.AdamW
     _partial_: True
-    weight_decay: 1.0e-4
     lr: 2.0e-4
   lr_scheduler:
     _target_: torch.optim.lr_scheduler.CosineAnnealingLR
     _partial_: True
     T_max: 100
-    eta_min: 1e-5
+    eta_min: 1e-6
 
 trainer:
   _target_: tgdp.training.Trainer

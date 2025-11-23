@@ -20,7 +20,6 @@ renderer:
   env_name: ${env}
 
 diffusion_model:
-  network:
   reweight_samples: False
   reweight_factor: 
   reweight_bias: 

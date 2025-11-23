@@ -48,7 +48,7 @@ diffusion_model:
       hidden_size: 256
       n_heads: 8
       depth: 2
-      dropout: 0.1
+      dropout: 0.0
   guides: ${guides}
   guide_scale: 20.
   max_temperature: 3.0
@@ -176,12 +176,11 @@ agent:
     _target_: torch.optim.AdamW
     _partial_: True
     lr: 2.0e-4
-    weight_decay: 1.0e-4
   lr_scheduler:
     _target_: torch.optim.lr_scheduler.CosineAnnealingLR
     _partial_: True
     T_max: 100
-    eta_min: 1.0e-5
+    eta_min: 1.0e-6
 
 trainer:
   _target_: tgdp.training.Trainer

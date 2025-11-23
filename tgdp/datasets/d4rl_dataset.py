@@ -230,7 +230,6 @@ class D4RLMazeDataset(D4RLDataset):
         max_episode_length: int = 1000,
         # Reward/MC-return parameters.
         dv_data_augmentation: bool = True,
-        include_truncated_episodes: bool = True,
         iql: bool = False,
         non_finishing_penalty: float = 0.0,
         compute_mc_return: bool = False,
@@ -286,7 +285,6 @@ class D4RLMazeDataset(D4RLDataset):
         """
         self.dv_data_augmentation = dv_data_augmentation
         self.non_finishing_penalty = non_finishing_penalty
-        self.include_truncated_episodes = include_truncated_episodes
         self.iql = iql
         super().__init__(
             env_name=env_name,
@@ -303,30 +301,6 @@ class D4RLMazeDataset(D4RLDataset):
             padding_truncations=padding_truncations,
             repeat_rewards_at_terminations=repeat_rewards_at_terminations,
         )
-
-    def _set_full_dataset_normalizer_statistics(self, env_name) -> None:
-        """Set the normalizer statistics using the full dataset."""
-        env = gym.make(env_name)
-        dataset = env.get_dataset()  # type: ignore[no-untyped-call]
-
-        # Every Dataset should contain at least the following fields:
-        keys = [
-            ("observations", "observations"),
-            ("actions", "actions"),
-            ("terminals", "terminations"),
-            ("timeouts", "truncations"),
-        ]
-        # In addition, we check for the presence of the following fields:
-        if "rewards" in dataset:
-            keys.append(("rewards", "rewards"))
-        if "infos/goal" in dataset:
-            keys.append(("infos/goal", "goals"))
-        dataset = {key: dataset[original_key] for original_key, key in keys}
-
-        # Set normalizer statistics for the main dataset.
-        for k in self.normalizers.keys():
-            if k != "mc_returns":
-                self.normalizers[k].set_statistics(dataset[k])
 
     def _load_dataset(
         self,
@@ -409,14 +383,16 @@ class D4RLMazeDataset(D4RLDataset):
                 if end > start:
                     for key in dataset.keys():
                         if key == "rewards":
-                            new_dataset["rewards"].extend(dataset["rewards"][start : i + 1] - subtract_rewards_per_step)
+                            new_dataset["rewards"].extend(
+                                dataset["rewards"][start : end + 1] - subtract_rewards_per_step
+                            )
                         elif key == "terminations":
-                            new_dataset[key].append(True)  # Set the final termination signal to True.
                             new_dataset[key].extend([False] * (end - start))  # Set other termination signals to False.
+                            new_dataset[key].append(True)  # Set the final termination signal to True.
                         elif key == "truncations":
                             new_dataset[key].extend([False] * (end - start + 1))  # Set all truncations to False.
                         else:
-                            new_dataset[key].extend([dataset[key][j] for j in reversed(range(start, end + 1))])
+                            new_dataset[key].extend(dataset[key][start : end + 1])
                 if end - i > max_episode_length:
                     # If the episode is longer than max_episode_length, we skip the rest of the episode.
                     while i > 0:
@@ -433,4 +409,4 @@ class D4RLMazeDataset(D4RLDataset):
             i -= 1
 
         # Cast to numpy arrays and return.
-        return {key: np.array(list(reversed(value)), dtype=np.float32) for key, value in new_dataset.items()}
+        return {key: np.array(value, dtype=np.float32) for key, value in new_dataset.items()}

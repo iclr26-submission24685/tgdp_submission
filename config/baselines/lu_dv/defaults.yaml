@@ -45,7 +45,7 @@ diffusion_model:
       global_condition_embedding:
       hidden_size: 256
       n_heads: 4
-      depth: ???
+      depth: 2
       dropout: 0.0
   guides: ${guides}
   scaling:

@@ -47,7 +47,7 @@ diffusion_model:
       hidden_size: 256
       n_heads: 8
       depth: 2
-      dropout: 0.1
+      dropout: 0.0
   guides: ${guides}
   guide_scale: 20.
   max_temperature: 3.0
@@ -75,24 +75,6 @@ guides:
     train_noise_conditional_network: False
     network: 
     loss_fn:
-  # trajectory_return:
-  #   _target_: tgdp.models.guidance.MonteCarloReturnGuide
-  #   network:
-  #     _target_: tgdp.networks.ema_wrapper.EMANetworkWrapper
-  #     wrapped_network:
-  #       _target_: tgdp.networks.guides.HalfDiT
-  #       input_size: ${observation_dim}
-  #       out_size: 1
-  #       sigma_embedding:
-  #       global_condition_embedding:
-  #       hidden_size: 256
-  #       n_heads: 8
-  #       depth: 2
-  #       dropout: 0.0
-  #       project_output_from_dit: False
-  #   train_noise_conditional_network: False
-  #   loss_fn:
-  #     _target_: tgdp.models.losses.ValueL2
 
 policy:
   _target_: tgdp.models.policy.InverseDynamicsPolicy
@@ -161,12 +143,11 @@ agent:
     _target_: torch.optim.AdamW
     _partial_: True
     lr: 2.0e-4
-    weight_decay: 1.0e-4
   lr_scheduler:
     _target_: torch.optim.lr_scheduler.CosineAnnealingLR
     _partial_: True
     T_max: 100
-    eta_min: 1.0e-5
+    eta_min: 1.0e-6
 
 trainer:
   _target_: tgdp.training.Trainer

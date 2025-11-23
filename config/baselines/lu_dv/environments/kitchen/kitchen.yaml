@@ -21,7 +21,6 @@ renderer:
   elevation: 0
 
 diffusion_model:
-  network:
   reweight_samples: False
   reweight_factor: 
   reweight_bias: 
